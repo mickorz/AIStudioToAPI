@@ -874,6 +874,7 @@ class StatusRoutes {
                 isSystemBusy: requestHandler.isSystemBusy,
                 logMaxCount: limit,
                 maxContexts: config.maxContexts,
+                maxRetries: config.maxRetries,
                 rotationIndicesRaw: rotationIndices,
                 streamingMode: this.serverSystem.streamingMode,
                 usageCount,
