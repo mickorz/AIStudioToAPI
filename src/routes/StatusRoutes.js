@@ -670,6 +670,182 @@ class StatusRoutes {
             }
         });
 
+        // API Key Management Routes
+        // Get all API keys
+        app.get("/api/settings/api-keys", isAuthenticated, (req, res) => {
+            try {
+                const apiKeyManager = this.serverSystem.apiKeyManager;
+                // Return full keys for authenticated session (user can copy them)
+                const keys = apiKeyManager.getAllKeys(true);
+                res.json({
+                    keys,
+                    success: true,
+                });
+            } catch (error) {
+                this.logger.error(`[WebUI] Failed to get API keys: ${error.message}`);
+                res.status(500).json({
+                    error: error.message,
+                    success: false,
+                });
+            }
+        });
+
+        // Create a new API key
+        app.post("/api/settings/api-keys", isAuthenticated, (req, res) => {
+            try {
+                const { name } = req.body;
+                const apiKeyManager = this.serverSystem.apiKeyManager;
+
+                if (!name || typeof name !== "string" || name.trim().length === 0) {
+                    return res.status(400).json({
+                        error: "Name is required",
+                        success: false,
+                    });
+                }
+
+                const trimmedName = name.trim().substring(0, 100);
+                const newKey = apiKeyManager.generateKey(trimmedName);
+
+                this.logger.info(`[WebUI] New API key created: ${trimmedName}`);
+                res.json({
+                    key: newKey,
+                    success: true,
+                });
+            } catch (error) {
+                this.logger.error(`[WebUI] Failed to create API key: ${error.message}`);
+                res.status(500).json({
+                    error: error.message,
+                    success: false,
+                });
+            }
+        });
+
+        // Delete an API key
+        app.delete("/api/settings/api-keys/:id", isAuthenticated, (req, res) => {
+            try {
+                const { id } = req.params;
+                const apiKeyManager = this.serverSystem.apiKeyManager;
+
+                if (!id) {
+                    return res.status(400).json({
+                        error: "Key ID is required",
+                        success: false,
+                    });
+                }
+
+                const success = apiKeyManager.deleteKey(id);
+
+                if (success) {
+                    this.logger.info(`[WebUI] API key deleted: ${id}`);
+                    res.json({
+                        success: true,
+                    });
+                } else {
+                    res.status(404).json({
+                        error: "Key not found",
+                        success: false,
+                    });
+                }
+            } catch (error) {
+                this.logger.error(`[WebUI] Failed to delete API key: ${error.message}`);
+                res.status(500).json({
+                    error: error.message,
+                    success: false,
+                });
+            }
+        });
+
+        // User Management Routes
+        // Get all users
+        app.get("/api/settings/users", isAuthenticated, (req, res) => {
+            try {
+                const userManager = this.serverSystem.userManager;
+                const users = userManager.getAllUsers();
+                res.json({
+                    success: true,
+                    users,
+                });
+            } catch (error) {
+                this.logger.error(`[WebUI] Failed to get users: ${error.message}`);
+                res.status(500).json({
+                    error: error.message,
+                    success: false,
+                });
+            }
+        });
+
+        // Create a new user
+        app.post("/api/settings/users", isAuthenticated, (req, res) => {
+            try {
+                const { username, password, displayName } = req.body;
+                const userManager = this.serverSystem.userManager;
+
+                const user = userManager.createUser(username, password, displayName);
+                this.logger.info(`[WebUI] User created: ${username}`);
+                res.json({
+                    success: true,
+                    user,
+                });
+            } catch (error) {
+                this.logger.error(`[WebUI] Failed to create user: ${error.message}`);
+                res.status(400).json({
+                    error: error.message,
+                    success: false,
+                });
+            }
+        });
+
+        // Update user password
+        app.put("/api/settings/users/:id/password", isAuthenticated, (req, res) => {
+            try {
+                const { id } = req.params;
+                const { newPassword } = req.body;
+                const userManager = this.serverSystem.userManager;
+
+                const success = userManager.updatePassword(id, newPassword);
+                if (success) {
+                    this.logger.info(`[WebUI] Password updated for user ID: ${id}`);
+                    res.json({ success: true });
+                } else {
+                    res.status(404).json({
+                        error: "User not found",
+                        success: false,
+                    });
+                }
+            } catch (error) {
+                this.logger.error(`[WebUI] Failed to update password: ${error.message}`);
+                res.status(400).json({
+                    error: error.message,
+                    success: false,
+                });
+            }
+        });
+
+        // Delete a user
+        app.delete("/api/settings/users/:id", isAuthenticated, (req, res) => {
+            try {
+                const { id } = req.params;
+                const userManager = this.serverSystem.userManager;
+
+                const success = userManager.deleteUser(id);
+                if (success) {
+                    this.logger.info(`[WebUI] User deleted: ${id}`);
+                    res.json({ success: true });
+                } else {
+                    res.status(404).json({
+                        error: "User not found",
+                        success: false,
+                    });
+                }
+            } catch (error) {
+                this.logger.error(`[WebUI] Failed to delete user: ${error.message}`);
+                res.status(400).json({
+                    error: error.message,
+                    success: false,
+                });
+            }
+        });
+
         app.post("/api/files", isAuthenticated, async (req, res) => {
             const { content } = req.body;
             // Ignore req.body.filename - auto rename

@@ -29,25 +29,20 @@
                 </svg>
             </button>
             <div v-if="configLoaded" class="login-content">
-                <h2 class="login-title">
-                    {{ requirePassword ? t("loginHeadingAuth") : t("loginHeading") }}
-                </h2>
-                <div v-if="requireUsername">
+                <h2 class="login-title">{{ t("loginHeadingAuth") }}</h2>
+                <div>
                     <input type="text" name="username" :placeholder="t('usernamePlaceholder')" required autofocus />
                 </div>
                 <div>
                     <input
                         type="password"
-                        :name="requirePassword ? 'password' : 'apiKey'"
-                        :placeholder="requirePassword ? t('passwordPlaceholder') : t('apiKeyPlaceholder')"
+                        name="password"
+                        :placeholder="t('passwordPlaceholder')"
                         required
-                        :autofocus="!requireUsername"
                     />
                 </div>
                 <div>
-                    <button type="submit">
-                        {{ t("loginBtn") }}
-                    </button>
+                    <button type="submit">{{ t("loginBtn") }}</button>
                 </div>
             </div>
             <p v-if="errorText" class="error">

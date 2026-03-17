@@ -444,12 +444,32 @@ const ensureCamoufoxExecutable = async () => {
 
     const zipFilePath = path.join(PROJECT_ROOT, "camoufox.zip");
 
-    console.log(getText("[2/4] 检查 Camoufox...", "[2/4] Checking Camoufox..."));
-    console.log(getText(`正在下载 Camoufox (${version})...`, `Downloading Camoufox (${version})...`));
-    console.log(getText(`下载地址: ${downloadUrl}`, `Download URL: ${downloadUrl}`));
+    // 检查本地 Download 目录是否存在 zip 文件
+    const localDownloadDir = path.join(PROJECT_ROOT, "Download");
+    const localZipPattern = /camoufox.*\.zip$/i;
+    let localZipFile = null;
 
-    await downloadFile(downloadUrl, zipFilePath);
-    console.log(getText("下载完成。", "Download complete."));
+    if (fs.existsSync(localDownloadDir)) {
+        const files = fs.readdirSync(localDownloadDir);
+        localZipFile = files.find(file => localZipPattern.test(file));
+        if (localZipFile) {
+            localZipFile = path.join(localDownloadDir, localZipFile);
+        }
+    }
+
+    console.log(getText("[2/4] 检查 Camoufox...", "[2/4] Checking Camoufox..."));
+
+    if (localZipFile && fs.existsSync(localZipFile)) {
+        console.log(getText(`发现本地 zip 文件: ${localZipFile}`, `Found local zip file: ${localZipFile}`));
+        console.log(getText("使用本地文件，跳过下载...", "Using local file, skipping download..."));
+        // 复制到工作目录
+        fs.copyFileSync(localZipFile, zipFilePath);
+    } else {
+        console.log(getText(`正在下载 Camoufox (${version})...`, `Downloading Camoufox (${version})...`));
+        console.log(getText(`下载地址: ${downloadUrl}`, `Download URL: ${downloadUrl}`));
+        await downloadFile(downloadUrl, zipFilePath);
+        console.log(getText("下载完成。", "Download complete."));
+    }
 
     console.log(getText("[3/4] 正在解压 Camoufox...", "[3/4] Extracting Camoufox..."));
     extractZip(zipFilePath, installDir);

@@ -27,6 +27,10 @@ auth-*.json
 users.csv
 cache/
 
+# User data files
+configs/api_keys.json
+configs/users.json
+
 # Temporary files
 tmp/
 ui/dist/

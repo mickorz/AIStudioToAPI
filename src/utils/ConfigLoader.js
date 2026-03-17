@@ -13,8 +13,17 @@ const path = require("path");
  * Responsible for loading system configuration from environment variables
  */
 class ConfigLoader {
-    constructor(logger) {
+    constructor(logger, apiKeyManager = null) {
         this.logger = logger;
+        this.apiKeyManager = apiKeyManager;
+    }
+
+    /**
+     * Set the ApiKeyManager instance after initialization
+     * @param {ApiKeyManager} apiKeyManager - The ApiKeyManager instance
+     */
+    setApiKeyManager(apiKeyManager) {
+        this.apiKeyManager = apiKeyManager;
     }
 
     loadConfiguration() {
@@ -113,8 +122,24 @@ class ConfigLoader {
             config.apiKeys = [];
         }
 
+        // Load custom API keys from file if ApiKeyManager is available
+        let customKeyCount = 0;
+        if (this.apiKeyManager) {
+            const customKeys = this.apiKeyManager.getAllKeyStrings();
+            customKeyCount = customKeys.length;
+            // Merge and deduplicate keys
+            const allKeys = [...new Set([...config.apiKeys, ...customKeys])];
+            config.apiKeys = allKeys;
+        }
+
         if (config.apiKeys.length > 0) {
-            config.apiKeySource = "Custom";
+            if (customKeyCount > 0 && config.apiKeys.length === customKeyCount) {
+                config.apiKeySource = "Custom (Web)";
+            } else if (customKeyCount > 0) {
+                config.apiKeySource = `Custom (Env + ${customKeyCount} Web)`;
+            } else {
+                config.apiKeySource = "Custom";
+            }
         } else {
             config.apiKeys = ["123456"];
             config.apiKeySource = "Default";

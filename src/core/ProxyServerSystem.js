@@ -16,6 +16,8 @@ const { URL } = require("url");
 
 const LoggingService = require("../utils/LoggingService");
 const AuthSource = require("../auth/AuthSource");
+const ApiKeyManager = require("../auth/ApiKeyManager");
+const UserManager = require("../auth/UserManager");
 const BrowserManager = require("./BrowserManager");
 const ConnectionRegistry = require("./ConnectionRegistry");
 const RequestHandler = require("./RequestHandler");
@@ -31,7 +33,14 @@ class ProxyServerSystem extends EventEmitter {
         super();
         this.logger = new LoggingService("AIStudioToAPI");
 
-        const configLoader = new ConfigLoader(this.logger);
+        // Initialize ApiKeyManager first
+        this.apiKeyManager = new ApiKeyManager(this.logger);
+
+        // Initialize UserManager for web console authentication
+        this.userManager = new UserManager(this.logger);
+
+        // Initialize ConfigLoader with ApiKeyManager
+        const configLoader = new ConfigLoader(this.logger, this.apiKeyManager);
         this.config = configLoader.loadConfiguration();
         this.streamingMode = this.config.streamingMode;
         this.forceThinking = this.config.forceThinking;
@@ -196,10 +205,13 @@ class ProxyServerSystem extends EventEmitter {
                 }
             }
 
-            const serverApiKeys = this.config.apiKeys;
-            if (!serverApiKeys || serverApiKeys.length === 0) {
-                return next();
-            }
+            // Dynamically get all valid API keys (env vars + custom keys from file)
+            const envApiKeys = process.env.API_KEYS ? process.env.API_KEYS.split(",").map(k => k.trim()).filter(k => k) : [];
+            const customApiKeys = this.apiKeyManager ? this.apiKeyManager.getAllKeyStrings() : [];
+            const serverApiKeys = [...new Set([...envApiKeys, ...customApiKeys])];
+
+            // If no keys configured, use default
+            const finalApiKeys = serverApiKeys.length > 0 ? serverApiKeys : ["123456"];
 
             let clientKey = null;
             if (req.headers["x-goog-api-key"]) {
@@ -212,10 +224,14 @@ class ProxyServerSystem extends EventEmitter {
                 clientKey = req.query.key;
             }
 
-            if (clientKey && serverApiKeys.includes(clientKey)) {
+            if (clientKey && finalApiKeys.includes(clientKey)) {
                 this.logger.info(
                     `[Auth] API Key verification passed (from: ${this.webRoutes.authRoutes.getClientIP(req)})`
                 );
+                // Update last used time for custom API keys
+                if (this.apiKeyManager) {
+                    this.apiKeyManager.updateLastUsed(clientKey);
+                }
                 if (req.query.key) {
                     delete req.query.key;
                 }
@@ -235,6 +251,19 @@ class ProxyServerSystem extends EventEmitter {
                 },
             });
         };
+    }
+
+    /**
+     * Middleware to require session authentication for protected routes
+     */
+    _requireSessionAuth(req, res, next) {
+        if (req.session && req.session.isAuthenticated) {
+            return next();
+        }
+        return res.status(401).json({
+            error: "Authentication required",
+            success: false,
+        });
     }
 
     async _startHttpServer() {

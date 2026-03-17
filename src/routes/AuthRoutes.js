@@ -119,10 +119,8 @@ class AuthRoutes {
 
         // Config endpoint to tell the frontend what login fields to display
         app.get("/api/auth/config", (req, res) => {
-            // Require username only if both username and password are set
-            const requireUsername = !!process.env.WEB_CONSOLE_USERNAME && !!process.env.WEB_CONSOLE_PASSWORD;
-            const requirePassword = !!process.env.WEB_CONSOLE_PASSWORD;
-            res.json({ requirePassword, requireUsername });
+            // Always require username and password with the new user system
+            res.json({ requirePassword: true, requireUsername: true });
         });
 
         // Login endpoint with rate limiting
@@ -151,24 +149,20 @@ class AuthRoutes {
                 }
             }
 
-            const { apiKey, username, password } = req.body;
+            const { username, password } = req.body;
             let authSuccess = false;
-            const submittedPassword = password || apiKey;
-            const expectedUsername = process.env.WEB_CONSOLE_USERNAME;
-            const expectedPassword = process.env.WEB_CONSOLE_PASSWORD;
 
-            if (expectedUsername && expectedPassword) {
-                if (username === expectedUsername && submittedPassword === expectedPassword) {
+            // Use UserManager for authentication
+            const userManager = this.serverSystem.userManager;
+            if (userManager) {
+                const user = userManager.verifyUser(username, password);
+                if (user) {
                     authSuccess = true;
-                }
-            } else if (!expectedUsername && expectedPassword) {
-                if (submittedPassword === expectedPassword) {
-                    authSuccess = true;
+                    // Store user info in session
+                    req.session.user = user;
                 }
             } else {
-                if (submittedPassword && this.config.apiKeys.includes(submittedPassword)) {
-                    authSuccess = true;
-                }
+                this.logger.error("[Auth] UserManager not initialized");
             }
 
             if (authSuccess) {

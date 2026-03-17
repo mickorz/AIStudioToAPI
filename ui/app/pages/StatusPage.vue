@@ -78,6 +78,28 @@
                         <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
                 </button>
+                <button
+                    class="menu-item"
+                    :class="{ active: activeTab === 'apikeys' }"
+                    :title="t('apiKeyManagement')"
+                    @click="switchTab('apikeys')"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path
+                            d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"
+                        ></path>
+                    </svg>
+                </button>
             </div>
 
             <div class="sidebar-footer">
@@ -1396,6 +1418,161 @@
             </div>
 
             <!-- LOGS VIEW -->
+            <!-- API KEYS VIEW -->
+            <div v-if="activeTab === 'apikeys'" class="view-container">
+                <header class="page-header" style="display: flex; justify-content: space-between; align-items: center">
+                    <h1>{{ t("apiKeyManagement") }}</h1>
+                    <button class="btn-generate-key" @click="showCreateKeyDialog">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>{{ t("generateApiKey") }}</span>
+                    </button>
+                </header>
+
+                <div class="status-card">
+                    <div v-if="state.apiKeys.length === 0" class="empty-state">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="48"
+                            height="48"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            style="margin-bottom: 16px; color: var(--text-secondary)"
+                        >
+                            <path
+                                d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"
+                            ></path>
+                        </svg>
+                        <p style="color: var(--text-secondary); margin-bottom: 8px">{{ t("noCustomApiKeys") }}</p>
+                        <p style="color: var(--text-tertiary); font-size: 0.9em">{{ t("clickAboveToGenerate") }}</p>
+                    </div>
+                    <div v-else class="api-key-list">
+                        <div v-for="keyItem in state.apiKeys" :key="keyItem.id" class="api-key-item">
+                            <div class="api-key-info">
+                                <div class="api-key-name">{{ keyItem.name }}</div>
+                                <div class="api-key-value">
+                                    <code>{{ keyItem.key }}</code>
+                                    <button class="btn-copy-key" :title="t('copy')" @click="copyText(keyItem.key)">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="14"
+                                            height="14"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="api-key-meta">
+                                    <span>{{ t("createdAt") }}: {{ formatDate(keyItem.createdAt) }}</span>
+                                    <span v-if="keyItem.lastUsedAt"
+                                        >| {{ t("lastUsedAt") }}: {{ formatDate(keyItem.lastUsedAt) }}</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="api-key-actions">
+                                <button
+                                    class="btn-delete-key"
+                                    :title="t('deleteApiKey')"
+                                    @click="confirmDeleteKey(keyItem)"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path
+                                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                        ></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="state.apiKeys.length > 0" class="api-key-warning">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <span>{{ t("apiKeySecurityWarning") }}</span>
+                    </div>
+                </div>
+
+                <!-- Info card -->
+                <div class="status-card info-card" style="margin-top: 16px">
+                    <h3 class="card-title">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            style="margin-right: 8px; vertical-align: text-bottom"
+                        >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        {{ t("usageGuide") }}
+                    </h3>
+                    <div class="info-content">
+                        <p>{{ t("apiKeyUsageGuide") }}</p>
+                        <ul>
+                            <li>{{ t("apiKeyGuide1") }}</li>
+                            <li>{{ t("apiKeyGuide2") }}</li>
+                            <li>{{ t("apiKeyGuide3") }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOGS VIEW -->
             <div v-if="activeTab === 'logs'" class="view-container logs-view-container">
                 <header class="page-header" style="display: flex; justify-content: space-between; align-items: center">
                     <h1>{{ t("realtimeLogs") }} ({{ state.logCount }})</h1>
@@ -1562,7 +1739,8 @@ const { theme, setTheme } = useTheme();
 const state = reactive({
     accountDetails: [],
     activeContextsCount: 0,
-    apiKeySource: "",
+    apiKeys: [],
+    apiKeySource: "", // Custom API keys from file
     browserConnected: false,
     currentAuthIndex: -1,
     currentLang: I18n.getLang(),
@@ -2077,6 +2255,98 @@ const handleLanguageChange = lang => {
     state.currentLang = lang;
     langVersion.value++;
     localStorage.setItem("language", lang);
+};
+
+// API Key Management
+const loadApiKeys = async () => {
+    try {
+        const res = await fetch("/api/settings/api-keys");
+        const data = await res.json();
+        if (data.success) {
+            state.apiKeys = data.keys;
+        }
+    } catch (error) {
+        console.error("Failed to load API keys:", error);
+    }
+};
+
+const showCreateKeyDialog = () => {
+    ElMessageBox.prompt(t("enterKeyName"), t("generateApiKey"), {
+        cancelButtonText: t("cancel"),
+        confirmButtonText: t("ok"),
+        inputErrorMessage: t("keyNameRequired"),
+        inputPattern: /^.{1,100}$/,
+        lockScroll: false,
+    })
+        .then(async ({ value }) => {
+            try {
+                const res = await fetch("/api/settings/api-keys", {
+                    body: JSON.stringify({ name: value }),
+                    headers: { "Content-Type": "application/json" },
+                    method: "POST",
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Show the full key for copying
+                    ElMessageBox.alert(
+                        `<div style="word-break: break-all; font-family: monospace; background: var(--bg-secondary); padding: 12px; border-radius: 6px; margin: 10px 0;">${data.key.key}</div>
+                         <p style="color: var(--text-secondary); font-size: 0.9em;">${t("copyKeyWarning")}</p>`,
+                        t("apiKeyGenerated"),
+                        {
+                            confirmButtonText: t("copy"),
+                            dangerouslyUseHTMLString: true,
+                            lockScroll: false,
+                        }
+                    )
+                        .then(() => {
+                            copyText(data.key.key);
+                        })
+                        .catch(() => {
+                            copyText(data.key.key);
+                        });
+                    await loadApiKeys();
+                } else {
+                    ElMessage.error(data.error || t("unknownError"));
+                }
+            } catch (error) {
+                console.error("Failed to create API key:", error);
+                ElMessage.error(t("unknownError"));
+            }
+        })
+        .catch(() => {});
+};
+
+const confirmDeleteKey = keyItem => {
+    ElMessageBox.confirm(t("confirmDeleteApiKey", { name: keyItem.name }), t("warningTitle"), {
+        cancelButtonText: t("cancel"),
+        confirmButtonText: t("ok"),
+        lockScroll: false,
+        type: "warning",
+    })
+        .then(async () => {
+            try {
+                const res = await fetch(`/api/settings/api-keys/${keyItem.id}`, {
+                    method: "DELETE",
+                });
+                const data = await res.json();
+                if (data.success) {
+                    ElMessage.success(t("apiKeyDeleted"));
+                    await loadApiKeys();
+                } else {
+                    ElMessage.error(data.error || t("unknownError"));
+                }
+            } catch (error) {
+                console.error("Failed to delete API key:", error);
+                ElMessage.error(t("unknownError"));
+            }
+        })
+        .catch(() => {});
+};
+
+const formatDate = dateString => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleString();
 };
 
 const handleLogout = () => {
@@ -2671,6 +2941,9 @@ onMounted(() => {
 
     // Check for updates once on initial load
     checkForUpdates();
+
+    // Load custom API keys
+    loadApiKeys();
 
     // Expose copyText function globally for tooltip HTML content
     window.__copyEnvVar = text => copyText(text);
@@ -3600,5 +3873,164 @@ watchEffect(() => {
     width: 28px;
     height: 28px;
     border-radius: 4px;
+}
+
+/* API Key Management */
+.api-key-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.api-key-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    transition: all 0.2s;
+
+    &:hover {
+        border-color: var(--primary-color);
+    }
+}
+
+.api-key-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.api-key-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.api-key-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+
+    code {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        background: var(--bg-card);
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+}
+
+.api-key-meta {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+}
+
+.api-key-actions {
+    flex-shrink: 0;
+    margin-left: 16px;
+}
+
+.btn-copy-key,
+.btn-delete-key {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+}
+
+.btn-delete-key:hover {
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+.btn-generate-key {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #1890ff;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+
+    &:hover {
+        background: #40a9ff;
+        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+        transform: translateY(-1px);
+    }
+
+    &:active {
+        background: #096dd9;
+        transform: translateY(0);
+    }
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.info-card {
+    background: var(--bg-card);
+}
+
+.info-content {
+    p {
+        margin-bottom: 12px;
+        color: var(--text-secondary);
+    }
+
+    ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--text-secondary);
+
+        li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+    }
+}
+
+.api-key-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    color: #f39c12;
+    font-size: 0.85rem;
+
+    svg {
+        flex-shrink: 0;
+    }
 }
 </style>
